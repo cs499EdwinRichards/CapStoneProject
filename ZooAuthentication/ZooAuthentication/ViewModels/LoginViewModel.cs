@@ -113,7 +113,7 @@ namespace ZooAuthentication.ViewModels
         unmanagedString = Marshal.SecureStringToGlobalAllocUnicode(Password);
 
         // Apply the hashing algorithm
-        hash = MD5.Create().ComputeHash(
+        hash = SHA256.Create().ComputeHash(
           Encoding.UTF8.GetBytes(Marshal.PtrToStringUni(unmanagedString)));
 
         // Return the credential object with a matching username and password if it exists
