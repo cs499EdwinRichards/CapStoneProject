@@ -1,6 +1,7 @@
 # Zoo Authentication System
-by Edwin Richards
------
+
+by **Edwin Richards** 
+
 This is an authentication/authorization system rewritten from IT-145 (Foundation in Application Development). The original requirements were: 
 * Write an authentication system that gives a user three attempts to log in. 
 * After three failed attempts, the program should display a warning and then close.
@@ -8,7 +9,6 @@ This is an authentication/authorization system rewritten from IT-145 (Foundation
 * The user should have to option to log out of the system to allow a new user to log in.
 
 ### Demo and Code Review
-<div><iframe class="embed-responsive-item" src="https://www.youtube.com/embed/ZPmXtRK2rYw" width="800" height="450"  allowfullscreen frameborder="0"></iframe></div>
 
 This Cap Stone project is supposed to address and enhance three main concepts from the original program:
 * Software Design and Engineering
