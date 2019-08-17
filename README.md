@@ -9,6 +9,7 @@ This is an authentication/authorization system rewritten from IT-145 (Foundation
 * The user should have to option to log out of the system to allow a new user to log in.
 
 ### Demo and Code Review
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/ZPmXtRK2rYw/0.jpg)](https://www.youtube.com/watch?v=ZPmXtRK2rYw)
 
 This Cap Stone project is supposed to address and enhance three main concepts from the original program:
 * Software Design and Engineering
