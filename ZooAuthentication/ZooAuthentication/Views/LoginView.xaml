@@ -30,6 +30,16 @@
       <TextBlock FontSize="16"
                  Text="Please log in to continue" />
     </StackPanel>
+
+    <StackPanel Grid.Row="0"
+                Grid.Column="2"
+                Orientation="Horizontal"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Left">
+      <Button Content="Unlock User"
+              Command="{Binding UnlockCommand}" />
+    </StackPanel>
+    
     <StackPanel Grid.Row="1"
                 Grid.Column="1"
                 Orientation="Vertical"
@@ -41,7 +51,7 @@
           <Label Content="Username:" />
           <TextBox x:Name="txtUsername"
                    materialDesign:HintAssist.Hint="Enter Username"
-                   Text="{Binding Username}"
+                   Text="{Binding Username, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                    Margin="4 0 0 16" />
           <Label Content="Password:" />
           

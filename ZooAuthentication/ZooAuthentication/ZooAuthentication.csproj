@@ -73,11 +73,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="Models\Credential.cs" />
     <Compile Include="Classes\Delegates.cs" />
     <Compile Include="Classes\NamedEvent.cs" />
     <Compile Include="Classes\NamedEventParameter.cs" />
     <Compile Include="Classes\RelayCommand.cs" />
+    <Compile Include="DataLayer\Database.cs" />
+    <Compile Include="DataLayer\Function.cs" />
+    <Compile Include="Functions\authenticate_user.cs" />
+    <Compile Include="Functions\unlock_user.cs" />
+    <Compile Include="Models\AuthenticateResult.cs" />
     <Compile Include="Services\NamedEventService.cs" />
     <Compile Include="Services\ServiceContainer.cs" />
     <Compile Include="ViewModels\AuthorizedTasksViewModel.cs" />
@@ -142,11 +146,5 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup />
-  <ItemGroup>
-    <Resource Include="Files\admin.txt" />
-    <Resource Include="Files\credentials.txt" />
-    <Resource Include="Files\veterinarian.txt" />
-    <Resource Include="Files\zookeeper.txt" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
