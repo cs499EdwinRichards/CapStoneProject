@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -9,6 +10,8 @@ using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using ZooAuthentication.Classes;
+using ZooAuthentication.DataLayer;
+using ZooAuthentication.Functions;
 using ZooAuthentication.Models;
 using ZooAuthentication.NamedEvents;
 using ZooAuthentication.Services;
@@ -26,17 +29,13 @@ namespace ZooAuthentication.ViewModels
     private string username = string.Empty;
 
     /// <summary>
-    /// The list of valid credentials from which we can authenticate
-    /// </summary>
-    private List<Credential> credentials = new List<Credential>();
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="LoginViewModel"/> class
     /// </summary>
     public LoginViewModel()
     {
       // Wire up the command to authenticate the user with the appropriate handler method
       AuthenticateCommand = new RelayCommand(Authenticate);
+      UnlockCommand = new RelayCommand(Unlock, param => Username.Length > 0);
     }
 
     /// <summary>
@@ -55,17 +54,14 @@ namespace ZooAuthentication.ViewModels
     /// <summary>
     /// Sets the password entered by the user
     /// </summary>
-    public SecureString Password { private get; set; }
-
-    /// <summary>
-    /// Gets the number of login attempts processed
-    /// </summary>
-    public int Attempts { get; private set; } = 0;
+    public SecureString Password { private get; set; } = new SecureString();
 
     /// <summary>
     /// Gets or sets the <see cref="RelayCommand"/> to invoke the authenticate event
     /// </summary>
     public ICommand AuthenticateCommand { get; set; }
+
+    public ICommand UnlockCommand { get; set; }
 
     /// <summary>
     /// Executes an attempt to authenticate the user
@@ -88,14 +84,6 @@ namespace ZooAuthentication.ViewModels
         return;
       }
 
-      if (credentials.Count == 0 && !InitializeCredentials())
-      {
-        ErrorMessage = "No credentials located. Login not possible.";
-        return;
-      }
-
-      Attempts++;
-
       // The byte array that will contain the result of hashing the entered password
       byte[] hash;
 
@@ -116,33 +104,44 @@ namespace ZooAuthentication.ViewModels
         hash = SHA256.Create().ComputeHash(
           Encoding.UTF8.GetBytes(Marshal.PtrToStringUni(unmanagedString)));
 
-        // Return the credential object with a matching username and password if it exists
-        var match = credentials.FirstOrDefault(c => c.User == Username &&
-          c.Pass.ToLower() == BitConverter.ToString(hash).Replace("-", "").ToLower());
+        Function loginFunction = new authenticate_user();
 
-        if (match == null)
+        var results = new List<AuthenticateResult>();
+
+        try
         {
-          // Login failed
-          if (Attempts >= 3)
-          {
-            MessageBox.Show("You have exceeded the maximum number of allowed attempts.\n" +
-              "The program will now close.\n\nPlease try again later.",
-              "Authentication Failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            Application.Current.Shutdown();
-          }
-          else
-            ErrorMessage = "Invalid username or password";
+          loginFunction["@user"].Value = Username;
+          loginFunction["@password"].Value = hash;
+
+          results = loginFunction.ExecuteData<AuthenticateResult>();
+
+          if (results.Count == 0)
+            throw new Exception("Nothing returned during authentication");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+          System.Diagnostics.Debug.WriteLine($"Database Exception: {ex.Message}");
+#endif
+          ErrorMessage = "An error occurred in the database during authentication";
           return;
         }
-        else
+
+        var loginResult = results.First();
+
+        if (!loginResult.Success)
         {
-          // Execute the named event to indicate successful login. Consumed by the Main Window
-          // which will change the screen to display the authorized tasks for the given role
-          ServiceContainer.Instance.GetService<NamedEventService>()
-            .Execute(this, "LoginSuccess",
-            new NamedEventParameter("user", match.User),
-            new NamedEventParameter("role", match.Role));
+          ErrorMessage = "Authentication failed!";
+          return;
         }
+
+        // Execute the named event to indicate successful login. Consumed by the Main Window
+        // which will change the screen to display the authorized tasks for the given role
+        ServiceContainer.Instance.GetService<NamedEventService>()
+          .Execute(this, "LoginSuccess",
+          new NamedEventParameter("user", Username),
+          new NamedEventParameter("greeting", loginResult.RoleGreeting),
+          new NamedEventParameter("tasks", loginResult.RoleTasks));
       }
       // Handle any errors
       catch (Exception ex)
@@ -163,41 +162,33 @@ namespace ZooAuthentication.ViewModels
       }
     }
 
-    /// <summary>
-    /// Initializes the list of credentials from the credentials text file
-    /// </summary>
-    /// <returns><see langword="true"/> if the credentials were initialized successfully, 
-    /// otherwise <see langword="false"/></returns>
-    private bool InitializeCredentials()
+    private void Unlock(object parameter)
     {
+      ErrorMessage = string.Empty;
+
+      var result = -1;
+
       try
       {
-        // Get all the lines from the file
-        var lines = File.ReadAllLines(Path.Combine("..", "..", "Files", "credentials.txt"));
+        Function unlockFunction = new unlock_user();
 
-        foreach (var line in lines)
-        {
-          // Split up the line into individual fields
-          var fields = line.Split('\t');
-          // Add a new credential object using the fields for the username, hashed password, and role
-          credentials.Add(new Credential(fields[0], fields[1], fields.Last()));
-        }
+        unlockFunction["@user"].Value = Username;
 
-        return credentials.Count > 0;
-      }
-      catch (FileNotFoundException)
-      {
-        ErrorMessage = "Unable to locate the credentials file";
+        result = unlockFunction.ExecuteNonQuery();
+
+        if (result > 0)
+          MessageBox.Show($"Successfully unlocked user '{Username}'. Try logging in again.", "Unlock User");
+        else
+          MessageBox.Show($"Unable to unlocked user '{Username}'. Try again or log in with a different user account.", "Unlock User", 
+            MessageBoxButton.OK, MessageBoxImage.Exclamation);
       }
       catch (Exception ex)
       {
 #if DEBUG
-        System.Diagnostics.Debug.WriteLine($"Unhandled Exception: {ex.Message}");
+        Debug.WriteLine($"Error unlocking user '{Username}': {ex.Message}");
 #endif
-        ErrorMessage = "An unknown error occurred";
+        ErrorMessage = "There was an error unlocking the user. Try again later or log in with a different user account.";
       }
-
-      return false;
     }
   }
 }
